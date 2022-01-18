@@ -1,10 +1,9 @@
-from json.encoder import INFINITY
 import random
 import words
-import os
 from collections import Counter
 from enum import Enum
 import argparse
+from math import inf
 
 WORDLE_SIZE = 5
 DEFAULT_MAX_GUESSES = 6
@@ -20,19 +19,6 @@ Symbols = {
   Status.absent: "⬜"
 }
 
-class LetterFrequencyMap:
-  def __init__(self, source):
-    self.map = Counter()
-
-    for word in source:
-      self.map.update(list(set(word)))
-
-  def __repr__(self) -> str:
-    return self.most_common()
-
-  def __getitem__(self, key):
-    return self.map[key]
-
 class Guess:
   def __init__(self, word, goal, candidates = words.mystery_words):
     self.goal = goal
@@ -41,9 +27,6 @@ class Guess:
     self.corrects = set()
     self.presents = set()
     self.evaluation = []
-
-  def next(self):
-    self.word = self.suggest()
 
   def valid(self):
     return len(self.word) == WORDLE_SIZE and self.word.isalpha() and (self.word in words.legal_words or self.word in words.mystery_words)
@@ -82,10 +65,6 @@ class Guess:
 
     return self.evaluation == [Status.correct] * WORDLE_SIZE
 
-  def suggest(self):
-    self.prune_candidates()
-    return self.best_guess()
-
   def prune_candidates(self):
     for i in range(len(self.evaluation)):
       if self.evaluation[i] == Status.correct:
@@ -95,29 +74,12 @@ class Guess:
       else:
         self.candidates = [word for word in self.candidates if ((self.word[i] != word[i]) and (self.word[i] not in word or self.word[i] in self.corrects or self.word[i] in self.presents))]
 
-  def best_guess(self):
-    scores = Counter()
-    frequencies = LetterFrequencyMap(self.candidates)
-
-    for word in self.candidates:
-      used = set()
-      score = 0
-
-      for letter in word:
-        if letter not in used:
-          score += frequencies[letter]
-          used.add(letter)
-
-      scores[word] = score
-
-    return scores.most_common(1)[0][0]
-
-  def testing(self):
+  def next(self):
     guess_scores = Counter()
 
     for guess in words.mystery_words + words.legal_words:
       hit_counts = Counter()
-      score = INFINITY
+      score = inf
 
       for target in self.candidates:
         self.evaluate(guess, target)
@@ -164,23 +126,6 @@ class Wordle:
 
   def solve(self, should_print=False):
     guesses = 0
-    guess = Guess(None, self.mystery_word)
-
-    # Infinite loops aren't infinite to successful solvers...
-    while True:
-      guesses += 1
-      success = guess.evaluate()
-
-      if should_print:
-        print(guess)
-
-      if success:
-        return guesses, self.mystery_word
-
-      guess.next()
-
-  def improved_solve(self, should_print=False):
-    guesses = 0
     guess = Guess("soare", self.mystery_word)
     guess.evaluate()
     guess.prune_candidates()
@@ -196,14 +141,14 @@ class Wordle:
       if success:
         return guesses, self.mystery_word
 
-      guess.testing()
+      guess.next()
 
 def run_solve(max_guesses = DEFAULT_MAX_GUESSES):
   solves = Counter()
   fails = set()
 
   for seed in words.mystery_words:
-    solution = Wordle(seed).improved_solve()
+    solution = Wordle(seed).solve()
     solves.update([solution[0]])
 
     if solution[0] > max_guesses:
@@ -214,7 +159,7 @@ def run_solve(max_guesses = DEFAULT_MAX_GUESSES):
 
 def run_solve_on_seed(seed):
   if seed != "":
-    Wordle(seed).improved_solve(True)
+    Wordle(seed).solve(True)
 
 def run_play(seed):
   wordle = Wordle(seed)
@@ -228,16 +173,8 @@ def main(args):
   else:
     run_solve()
 
-def test():
-  guess = Guess("soare", random.choice(words.mystery_words))
-  print(guess)
-  guess.prune_candidates()
-  print(guess.candidates)
-  guess.testing()
-
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='play or solve wordle')
   parser.add_argument('--manual', action="store_true", help='play manually')
   parser.add_argument('--seed', default="", type=str, help='seed word')
   main(parser.parse_args())
-  #test()
