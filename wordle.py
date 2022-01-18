@@ -1,9 +1,9 @@
-import random
-import words
+import argparse
 from collections import Counter
 from enum import Enum
-import argparse
 from math import inf
+import random
+import words
 
 WORDLE_SIZE = 5
 DEFAULT_MAX_GUESSES = 6
@@ -23,13 +23,18 @@ class Guess:
   def __init__(self, word, goal, candidates = words.mystery_words):
     self.goal = goal
     self.candidates = candidates
-    self.word = word if word != None else self.best_guess()
+    self.word = word
     self.corrects = set()
     self.presents = set()
     self.evaluation = []
+    self.succesful = self.evaluate()
+    self.prune_candidates()
 
   def valid(self):
     return len(self.word) == WORDLE_SIZE and self.word.isalpha() and (self.word in words.legal_words or self.word in words.mystery_words)
+
+  def successful(self):
+    return self.succesful
 
   def evaluate(self, guess = None, goal = None):
     if len(self.word) != WORDLE_SIZE:
@@ -95,7 +100,7 @@ class Guess:
 
     result = cands[0] if len(cands) > 0 else max[0]
     self.word = result
-    self.evaluate()
+    self.succesful = self.evaluate()
     self.prune_candidates()
 
   def __repr__(self):
@@ -111,39 +116,36 @@ class Wordle:
     guesses = 0
 
     while guesses < max_guesses:
-      guess = Guess(input("Enter guess: ").lower(), self.mystery_word, None)
+      guess = Guess(input("Enter guess: ").lower(), self.mystery_word)
       print ("\033[A                             \033[A")
 
       if guess.valid():
         guesses += 1
-        success = guess.evaluate()
         print(guess)
 
-        if success:
+        if guess.successful():
           return
 
     print(f"\nFailed... the wordle was '{self.mystery_word}'.")
 
   def solve(self, should_print=False):
     guesses = 0
-    guess = Guess("soare", self.mystery_word)
-    guess.evaluate()
-    guess.prune_candidates()
 
-    # Infinite loops aren't infinite to successful solvers...
+    # This would take a while to calculate...
+    guess = Guess("soare", self.mystery_word)
+
     while True:
       guesses += 1
-      success = guess.evaluate()
 
       if should_print:
         print(guess)
 
-      if success:
+      if guess.successful():
         return guesses, self.mystery_word
 
       guess.next()
 
-def run_solve(max_guesses = DEFAULT_MAX_GUESSES):
+def solve_all(max_guesses = DEFAULT_MAX_GUESSES):
   solves = Counter()
   fails = set()
 
@@ -157,21 +159,13 @@ def run_solve(max_guesses = DEFAULT_MAX_GUESSES):
   print(solves)
   print(f"Failed words: {fails}")
 
-def run_solve_on_seed(seed):
-  if seed != "":
-    Wordle(seed).solve(True)
-
-def run_play(seed):
-  wordle = Wordle(seed)
-  wordle.play()
-
 def main(args):
   if args.manual:
-    run_play(args.seed)
+    Wordle(args.seed).play()
   elif args.seed != "":
-    run_solve_on_seed(args.seed)
+    Wordle(args.seed).solve(True)
   else:
-    run_solve()
+    solve_all()
 
 if __name__ == "__main__":
   parser = argparse.ArgumentParser(description='play or solve wordle')
