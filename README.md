@@ -3,6 +3,8 @@
 Implementation and solver of the word-game phenomenon.
 
 ## Game Interface
+![lorem ipsum](assets/gameplay.png "Gameplay")
+
 usage: wordle.py [-h] [--manual] [--seed SEED]
 
 | Syntax | Description |
@@ -18,4 +20,4 @@ Providing the manual flag (with or without a seed word) will present the user wi
 This solver uses a minimax-approach inspired by [Knuth's mastermind algorithm](http://www.cs.uni.edu/~wallingf/teaching/cs3530/resources/knuth-mastermind.pdf). The solver's guess at each stage is the word which would *minimize the maximum number of remaining possibilities*. This is, of course, quite slow when there are many remaining possible words; for a single game of wordle, ~10 seconds.
 
 ## Performance (starting word "soare")
-![lorem ipsum](performance.png "Performance")
+![lorem ipsum](assets/performance.png "Performance")
