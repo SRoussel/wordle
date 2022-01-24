@@ -31,7 +31,7 @@ class Wordle:
     guesses = 0
 
     # This would take a while to calculate...
-    guess = Guess("soare", self.mystery_word)
+    guess = Guess("arise", self.mystery_word)
 
     while True:
       guesses += 1
@@ -42,18 +42,25 @@ class Wordle:
       if guess.successful():
         return guesses, self.mystery_word
 
+      if should_print:
+        print(guess.candidates)
+
       guess.next()
 
   def solve_all(max_guesses = DEFAULT_MAX_GUESSES):
     solves = Counter()
     fails = set()
 
+    i = 1
     for seed in words.mystery_words:
       solution = Wordle(seed).solve()
       solves.update([solution[0]])
 
       if solution[0] > max_guesses:
         fails.add(solution[1])
+
+      print(i)
+      i += 1
 
     print(solves)
     print(f"Failed words: {fails}")
