@@ -1,80 +1,86 @@
+"""Wordle."""
+
 import argparse
 from collections import Counter
 import random
 
-from guess import Guess
+from guess import CORRECT_GUESS, Guess, evaluate, valid
 import words
 
 DEFAULT_MAX_GUESSES = 6
 
-class Wordle:
-  def __init__(self, seed = ""):
-    self.mystery_word = random.choice(words.mystery_words) if seed == "" else seed
+class Game:
+    """Representation of a game of Wordle.
+        Games may be played by the user or solved by the program."""
 
-  def play(self, max_guesses = DEFAULT_MAX_GUESSES):
-    guesses = 0
+    def __init__(self, seed = None):
+        """Initialize a wordle game, with a random starting word if none is given."""
+        self.mystery_word = random.choice(words.mystery_words) if seed is None else seed
 
-    while guesses < max_guesses:
-      guess = Guess(input("Enter guess: ").lower(), self.mystery_word)
-      print ("\033[A                             \033[A")
+    def play(self, max_guesses = DEFAULT_MAX_GUESSES):
+        """Plays a game of wordle."""
+        guesses = 0
 
-      if guess.valid():
-        guesses += 1
-        print(guess)
+        while guesses < max_guesses:
+            guess = Guess(input("Enter guess: ").lower(), self.mystery_word, words.mystery_words)
+            print ("\033[A                             \033[A") # hack for shell
 
-        if guess.successful():
-          return
+            if valid(guess.word):
+                guesses += 1
+                print(guess)
 
-    print(f"\nFailed... the wordle was '{self.mystery_word}'.")
+                if evaluate(guess.word, guess.goal) == CORRECT_GUESS:
+                    return
 
-  def solve(self, should_print=False):
-    guesses = 0
+        print(f"\nFailed... the wordle was '{self.mystery_word}'.")
 
-    # This would take a while to calculate...
-    guess = Guess("arise", self.mystery_word)
+    def solve(self, should_print=False):
+        """Solves a game of wordle."""
+        guesses = 0
 
-    while True:
-      guesses += 1
+        guess = Guess(None, self.mystery_word, words.mystery_words)
 
-      if should_print:
-        print(guess)
+        while True:
+            guesses += 1
 
-      if guess.successful():
-        return guesses, self.mystery_word
+            if should_print:
+                print(guess)
 
-      if should_print:
-        print(guess.candidates)
+            if evaluate(guess.word, guess.goal) == CORRECT_GUESS:
+                return guesses, self.mystery_word
 
-      guess.next()
+            if should_print:
+                print(guess.candidates)
 
-  def solve_all(max_guesses = DEFAULT_MAX_GUESSES):
-    solves = Counter()
-    fails = set()
+            guess.next_guess()
 
-    i = 1
-    for seed in words.mystery_words:
-      solution = Wordle(seed).solve()
-      solves.update([solution[0]])
+    @staticmethod
+    def solve_all(max_guesses = DEFAULT_MAX_GUESSES):
+        """Solves all posssible Wordles and outputs a counter of results."""
+        solves = Counter()
+        fails = set()
 
-      if solution[0] > max_guesses:
-        fails.add(solution[1])
+        for seed in words.mystery_words:
+            solution = Game(seed).solve()
+            solves.update([solution[0]])
 
-      print(i)
-      i += 1
+            if solution[0] > max_guesses:
+                fails.add(solution[1])
 
-    print(solves)
-    print(f"Failed words: {fails}")
+        print(solves)
+        print(f"Failed words: {fails}")
 
 def main(args):
-  if args.manual:
-    Wordle(args.seed).play()
-  elif args.seed != "":
-    Wordle(args.seed).solve(True)
-  else:
-    Wordle.solve_all()
+    """Run Wordle."""
+    if args.manual:
+        Game(args.seed).play()
+    elif args.seed is not None:
+        Game(args.seed).solve(True)
+    else:
+        Game.solve_all()
 
 if __name__ == "__main__":
-  parser = argparse.ArgumentParser(description='play or solve wordle')
-  parser.add_argument('--manual', action="store_true", help='play manually')
-  parser.add_argument('--seed', default="", type=str, help='seed word')
-  main(parser.parse_args())
+    parser = argparse.ArgumentParser(description='play or solve wordle')
+    parser.add_argument('--manual', action="store_true", help='play manually')
+    parser.add_argument('--seed', default=None, type=str, help='seed word')
+    main(parser.parse_args())
