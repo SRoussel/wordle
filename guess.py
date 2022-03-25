@@ -9,7 +9,7 @@ WORDLE_SIZE = 5
 CORRECT_GUESS = [True] * WORDLE_SIZE
 
 # Cache our suggestions to disk to drastically improve run-time.
-memory = Memory("cache/")
+memory = Memory("cache/", verbose=0)
 
 def valid(guess):
     """Returns whether the guess was valid."""

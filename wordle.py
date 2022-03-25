@@ -1,7 +1,9 @@
 """Wordle."""
 
 import argparse
+from ast import Raise
 from collections import Counter
+from multiprocessing.sharedctypes import Value
 import random
 
 from guess import CORRECT_GUESS, Guess, evaluate, valid
@@ -70,6 +72,14 @@ class Game:
         print(solves)
         print(f"Failed words: {fails}")
 
+class SeedAction(argparse.Action):
+    """Validates a seed."""
+    def __call__(self, parser, namespace, values, option_string=None):
+        """If a seed is not in mystery_words, it is invalid."""
+        if values not in words.mystery_words:
+            raise ValueError("Not a valid seed!")
+        setattr(namespace, self.dest, values)
+
 def main(args):
     """Run Wordle."""
     if args.manual:
@@ -82,5 +92,5 @@ def main(args):
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='play or solve wordle')
     parser.add_argument('--manual', action="store_true", help='play manually')
-    parser.add_argument('--seed', default=None, type=str, help='seed word')
+    parser.add_argument('--seed', default=None, action=SeedAction, type=str, help='seed word')
     main(parser.parse_args())
