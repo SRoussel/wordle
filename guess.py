@@ -100,7 +100,11 @@ class Guess:
 
     def next_guess(self):
         """Make the next best guess."""
-        self.word = make_suggestion(self.candidates)
+        self.take_guess(make_suggestion(self.candidates))
+
+    def take_guess(self, guess):
+        """Takes a guess."""
+        self.word = guess
         evaluation = evaluate(self.word, self.goal)
         self.candidates = prune_candidates(evaluation, self.word, self.candidates)
 
